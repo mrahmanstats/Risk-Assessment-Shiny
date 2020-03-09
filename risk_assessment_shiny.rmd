@@ -9,6 +9,7 @@ output:
 runtime: shiny
 ---
 
+
 ```{r}
 library(data.table)
 library(tidyverse)
@@ -59,72 +60,72 @@ importing <- reactive(if(input$importer == "R Environment"){
     })
 ```
 
-Row
--------------------------------------
+<!-- Row -->
+<!-- ------------------------------------- -->
 
-```{r}
-renderUI({
-    dataset <- importing()
-fluidRow(
-  selectInput3("var_1", "_Select Variable", c(" ", names(dataset)), width = 300),
-    selectInput3("type_1", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
-  )
-})
-```
+<!-- ```{r} -->
+<!-- renderUI({ -->
+<!--     dataset <- importing() -->
+<!-- fluidRow( -->
+<!--   selectInput3("var_1", "_Select Variable", c(" ", names(dataset)), width = 300), -->
+<!--     selectInput3("type_1", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300) -->
+<!--   ) -->
+<!-- }) -->
+<!-- ``` -->
 
-Row
--------------------------------------
+<!-- Row -->
+<!-- ------------------------------------- -->
 
-```{r}
-renderUI({
-    dataset <- importing()
-fluidRow(
-  selectInput3("var_2", "_Select Variable", c(" ", names(dataset)), width = 300),
-    selectInput3("type_2", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
-  )
-})
-```
+<!-- ```{r} -->
+<!-- renderUI({ -->
+<!--     dataset <- importing() -->
+<!-- fluidRow( -->
+<!--   selectInput3("var_2", "_Select Variable", c(" ", names(dataset)), width = 300), -->
+<!--     selectInput3("type_2", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300) -->
+<!--   ) -->
+<!-- }) -->
+<!-- ``` -->
 
-Row
--------------------------------------
+<!-- Row -->
+<!-- ------------------------------------- -->
 
-```{r}
+<!-- ```{r} -->
 
-renderUI({
-    dataset <- importing()
-fluidRow(
-  selectInput3("var_3", "_Select Variable", c(" ", names(dataset)), width = 300),
-    selectInput3("type_3", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
-  )
-})
-```
+<!-- renderUI({ -->
+<!--     dataset <- importing() -->
+<!-- fluidRow( -->
+<!--   selectInput3("var_3", "_Select Variable", c(" ", names(dataset)), width = 300), -->
+<!--     selectInput3("type_3", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300) -->
+<!--   ) -->
+<!-- }) -->
+<!-- ``` -->
 
-Row
--------------------------------------
+<!-- Row -->
+<!-- ------------------------------------- -->
 
-```{r}
+<!-- ```{r} -->
 
-renderUI({
-    dataset <- importing()
-fluidRow(
-  selectInput3("var_4", "_Select Variable", c(" ", names(dataset)), width = 300),
-    selectInput3("type_4", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
-  )
-})
-```
+<!-- renderUI({ -->
+<!--     dataset <- importing() -->
+<!-- fluidRow( -->
+<!--   selectInput3("var_4", "_Select Variable", c(" ", names(dataset)), width = 300), -->
+<!--     selectInput3("type_4", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300) -->
+<!--   ) -->
+<!-- }) -->
+<!-- ``` -->
 
-Row
--------------------------------------
+<!-- Row -->
+<!-- ------------------------------------- -->
 
-```{r}
-renderUI({
-    dataset <- importing()
-fluidRow(
-  selectInput3("var_5", "_Select Variable", c(" ", names(dataset)), width = 300),
-    selectInput3("type_5", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
-  )
-})
-```
+<!-- ```{r} -->
+<!-- renderUI({ -->
+<!--     dataset <- importing() -->
+<!-- fluidRow( -->
+<!--   selectInput3("var_5", "_Select Variable", c(" ", names(dataset)), width = 300), -->
+<!--     selectInput3("type_5", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300) -->
+<!--   ) -->
+<!-- }) -->
+<!-- ``` -->
 
 
 Data
@@ -352,74 +353,9 @@ Longitudinal Analysis
 Linear Regression
 =======================================================================
 
-  
-```{r global, include=FALSE}
-# load data in 'global' chunk so it can be shared by all users of the dashboard
-library(data.table)
-library(tidyverse)
-library(biclust)
-data(BicatYeast)
-set.seed(1)
-res <- biclust(BicatYeast, method=BCPlaid(), verbose=FALSE)
-
-```
-
 Inputs {.sidebar}
 -----------------------------------------------------------------------
   
-```{r}
-selectInput("clusterNum", label = h3("Cluster number"), 
-            choices = list("1" = 1, "2" = 2, "3" = 3, "4" = 4, "5" = 5), 
-            selected = 1)
-
-```
-
-Microarray data matrix for 80 experiments with Saccharomyces Cerevisiae
-organism extracted from R's `biclust` package.
-
-Sebastian Kaiser, Rodrigo Santamaria, Tatsiana Khamiakova, Martin Sill, Roberto
-Theron, Luis Quintales, Friedrich Leisch and Ewoud De Troyer. (2015). biclust:
-BiCluster Algorithms. R package version 1.2.0.
-http://CRAN.R-project.org/package=biclust
-
-Row
------------------------------------------------------------------------
-
-### Heatmap
-
-```{r}
-
-num <- reactive(as.integer(input$clusterNum))
-
-col = colorRampPalette(c("red", "white", "darkblue"), space="Lab")(10)
-renderPlot({
-p = par(mai=c(0,0,0,0))
-heatmapBC(BicatYeast, res, number=num(), xlab="", ylab="",
-order=TRUE, useRaster=TRUE, col=col)
-par(p)
-})
-```
-
-
-Row {.tabset}
------------------------------------------------------------------------
-
-### Parallel Coordinates
-
-```{r}
-renderPlot(
-parallelCoordinates(BicatYeast, res, number=num())
-)
-```
-
-### Data for Selected Cluster
-
-```{r}
-# only display table for values in cluster 4
-renderTable(
-BicatYeast[which(res@RowxNumber[, num()]), which(res@NumberxCol[num(), ])]
-)
-```
 
 Downloads
 =======================================================================
