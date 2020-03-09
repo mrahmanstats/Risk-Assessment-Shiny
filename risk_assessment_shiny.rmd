@@ -1,0 +1,425 @@
+---
+title: "Risk Assessment Dashboard"
+author: "Mohammed Rahman"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(gtsummary)
+library(shiny)
+library(skimr)
+library(inspectdf)
+library(editData)
+library(tidyselect)
+library(lubridate)
+library(gmodels)
+library(htmlTable)
+library(summarytools)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+library(plotly)
+theme_set(theme_pubr())
+ex_data <- fread("example_data.csv")
+```
+
+Importing Data
+=======================================================================
+
+### Side Panel
+
+```{r}
+sidebarPanel(
+selectInput("importer", "Data Import Method", c("R Environment", "Upload CSV")),
+conditionalPanel(
+  condition = "input.importer == 'Upload CSV'",
+  fileInput("file1", "Choose CSV File",
+       accept = c(
+         "text/csv",
+         "text/comma-separated-values,text/plain",
+         ".csv"))),
+       conditionalPanel(
+         condition = "input.importer == 'R Environment'",
+         textInput("text", "Enter Dataset Name in Global Environment", value = "ex_data")
+       )
+       )
+
+#checkboxInput("importer", "Click to Upload") 
+importing <- reactive(if(input$importer == "R Environment"){
+      assign("dataset", get(input$text))
+    } else{
+    dataset <- fread(input$file1$datapath)
+    })
+```
+
+Row
+-------------------------------------
+
+```{r}
+renderUI({
+    dataset <- importing()
+fluidRow(
+  selectInput3("var_1", "_Select Variable", c(" ", names(dataset)), width = 300),
+    selectInput3("type_1", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
+  )
+})
+```
+
+Row
+-------------------------------------
+
+```{r}
+renderUI({
+    dataset <- importing()
+fluidRow(
+  selectInput3("var_2", "_Select Variable", c(" ", names(dataset)), width = 300),
+    selectInput3("type_2", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
+  )
+})
+```
+
+Row
+-------------------------------------
+
+```{r}
+
+renderUI({
+    dataset <- importing()
+fluidRow(
+  selectInput3("var_3", "_Select Variable", c(" ", names(dataset)), width = 300),
+    selectInput3("type_3", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
+  )
+})
+```
+
+Row
+-------------------------------------
+
+```{r}
+
+renderUI({
+    dataset <- importing()
+fluidRow(
+  selectInput3("var_4", "_Select Variable", c(" ", names(dataset)), width = 300),
+    selectInput3("type_4", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
+  )
+})
+```
+
+Row
+-------------------------------------
+
+```{r}
+renderUI({
+    dataset <- importing()
+fluidRow(
+  selectInput3("var_5", "_Select Variable", c(" ", names(dataset)), width = 300),
+    selectInput3("type_5", "Select New Type", c("Numeric", "Character", "Date", "Factor"), width = 300)
+  )
+})
+```
+
+
+Data
+=======================================================================
+
+```{r}
+renderTable({
+  dataset <- importing()
+  dataset}, 
+  striped = T,
+  hover = T,
+  bordered = T)
+```
+
+Summary
+=======================================================================
+
+
+Inputs {.sidebar}
+-------------------------------------
+
+```{r}
+renderUI({
+  dataset <- importing()
+  selectizeInput(
+    "selector",
+    "Choose Variables",
+    names(dataset),
+    selected = names(dataset),
+    multiple = T
+    )
+  })
+```
+
+### Numerical Inputs
+
+```{r}
+
+renderUI({
+    dataset <- importing()
+    vars <- dataset %>% select_if(is.numeric) %>% names()
+
+  selectInput("num_var1", "Select X Variable", c(vars), width = 200)
+})
+
+renderUI({
+    dataset <- importing()
+    vars <- dataset %>% select_if(is.numeric) %>% names()
+  selectInput("num_var2", "Select Y Variable", c(vars), width = 200)
+})
+
+renderUI({
+    dataset <- importing()
+    vars <- dataset %>% select_if(is.numeric) %>% names()
+  selectInput("num_var3", "Select Grouping Variable", c(" ", vars), width = 200)
+})
+```
+
+### Categorical Inputs
+
+```{r}
+
+renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+
+  selectInput("cross_var1", "Select X Variable", c(vars), width = 200)
+})
+
+renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+  selectInput("cross_var2", "Select Y Variable", c(vars), width = 200)
+})
+
+renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+  selectInput("cross_var3", "Select Grouping Variable", c(" ", vars), width = 200)
+})
+```
+
+Row {.tabset} 
+-------------------------------------
+### Summary Table
+```{r}
+
+renderTable({
+  dataset <- importing()
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+  data <- psych::describe(dataset %>% select_if(is.numeric))
+  data %>% mutate(vars = row.names(data))
+})
+```
+
+### Scatterplots
+
+```{r}
+renderPlotly({
+  dataset <- importing()
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+  
+p <- ggplot(
+    data = dataset, aes_string(x = input$num_var1, y = input$num_var2)) +
+    scale_fill_simpsons() +
+    scale_color_simpsons()
+  
+if(input$cross_var3 == " " & input$num_var3 == " "){
+  ggplotly(p + geom_point()) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+} else if(input$cross_var3 != " " & input$num_var3 == " "){
+  ggplotly(p + geom_point(aes_string(col = input$cross_var3))) %>%
+      layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+} else if(input$cross_var3 == " " & input$num_var3 != " "){
+  ggplotly(p + geom_point(aes_string(size = input$num_var3))) %>%
+      layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+} else if(input$cross_var3 != " " & input$num_var3 != " "){
+  ggplotly(p + geom_point(aes_string(col = input$cross_var3, size = input$num_var3))) %>%
+      layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+}
+})
+```
+
+
+### Barplots
+
+```{r}
+renderPlotly({
+dataset <- importing()
+    
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+  va <- dataset %>% select_if(is.character) %>% names()
+  rs <- dataset %>% select_if(is.factor) %>% names()
+  vars <- c(va,rs)
+  b <- dataset[,names(dataset) %in% vars]
+  dataset <- dataset[,..b]
+  p <- ggplot(
+    data = dataset, aes_string(x = input$cross_var1)) +
+    scale_fill_simpsons() 
+  
+  if(input$cross_var3 == " "){
+  ggplotly(p + geom_bar(fill = "slateblue3") ) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+  } else{
+  ggplotly(
+    p + geom_bar(aes_string(fill = input$cross_var3)))%>%
+      layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+  }
+})
+
+
+```
+
+### Boxplot
+
+```{r}
+renderPlotly({
+dataset <- importing()
+    
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+
+  p <- ggplot(
+    data = dataset, aes_string(x = input$cross_var1, y = input$num_var2)) +
+    scale_fill_simpsons() +
+    scale_color_simpsons()
+  
+  if(input$cross_var3 == " "){
+  ggplotly(p + geom_boxplot(col = "slateblue3")) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+  } else{
+  ggplotly(
+    p + 
+    geom_boxplot(col = "black", aes_string(fill = input$cross_var3))) %>%
+    layout(legend = list(orientation = "h", x = 0.4, y = -0.2)) %>% 
+    layout(boxmode = "group")
+  }
+})
+
+
+```
+
+
+### Cross Table
+
+```{r}
+
+renderPrint({
+  dataset <- importing()
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b] %>% as.data.frame()
+  CrossTable(dataset[, input$cross_var1],
+             dataset[, input$cross_var2],
+             format="SPSS")
+  # ftable(table(dataset[, input$cross_var1],
+  #            dataset[, input$cross_var2]))
+})
+
+
+
+
+```
+
+
+
+
+
+Survival Analysis
+=======================================================================
+
+Longitudinal Analysis
+=======================================================================
+
+Linear Regression
+=======================================================================
+
+  
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(data.table)
+library(tidyverse)
+library(biclust)
+data(BicatYeast)
+set.seed(1)
+res <- biclust(BicatYeast, method=BCPlaid(), verbose=FALSE)
+
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+  
+```{r}
+selectInput("clusterNum", label = h3("Cluster number"), 
+            choices = list("1" = 1, "2" = 2, "3" = 3, "4" = 4, "5" = 5), 
+            selected = 1)
+
+```
+
+Microarray data matrix for 80 experiments with Saccharomyces Cerevisiae
+organism extracted from R's `biclust` package.
+
+Sebastian Kaiser, Rodrigo Santamaria, Tatsiana Khamiakova, Martin Sill, Roberto
+Theron, Luis Quintales, Friedrich Leisch and Ewoud De Troyer. (2015). biclust:
+BiCluster Algorithms. R package version 1.2.0.
+http://CRAN.R-project.org/package=biclust
+
+Row
+-----------------------------------------------------------------------
+
+### Heatmap
+
+```{r}
+
+num <- reactive(as.integer(input$clusterNum))
+
+col = colorRampPalette(c("red", "white", "darkblue"), space="Lab")(10)
+renderPlot({
+p = par(mai=c(0,0,0,0))
+heatmapBC(BicatYeast, res, number=num(), xlab="", ylab="",
+order=TRUE, useRaster=TRUE, col=col)
+par(p)
+})
+```
+
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Parallel Coordinates
+
+```{r}
+renderPlot(
+parallelCoordinates(BicatYeast, res, number=num())
+)
+```
+
+### Data for Selected Cluster
+
+```{r}
+# only display table for values in cluster 4
+renderTable(
+BicatYeast[which(res@RowxNumber[, num()]), which(res@NumberxCol[num(), ])]
+)
+```
+
+Downloads
+=======================================================================
