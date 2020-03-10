@@ -11,6 +11,10 @@ runtime: shiny
 
 
 ```{r}
+tags$style(type="text/css",
+  ".shiny-output-error { visibility: hidden; }",
+  ".shiny-output-error:before { visibility: hidden; }"
+)
 library(data.table)
 library(tidyverse)
 library(gtsummary)
@@ -34,7 +38,7 @@ ex_data <- fread("example_data.csv")
 Importing Data
 =======================================================================
 
-### Side Panel
+Importing Data
 
 ```{r}
 sidebarPanel(
@@ -143,83 +147,162 @@ renderTable({
 Summary
 =======================================================================
 
+<!-- Inputs {.sidebar} -->
+<!-- ------------------------------------- -->
 
-Inputs {.sidebar}
--------------------------------------
-
-```{r}
-renderUI({
+```{r Inputs for Summary Tab}
+output$choose <- renderUI({
   dataset <- importing()
   selectizeInput(
     "selector",
     "Choose Variables",
     names(dataset),
     selected = names(dataset),
-    multiple = T
+    multiple = T,
+    width = 300
     )
   })
-```
 
-### Numerical Inputs
-
-```{r}
-
-renderUI({
+#Scatterplot Inputs
+output$scatterx <- renderUI({
     dataset <- importing()
     vars <- dataset %>% select_if(is.numeric) %>% names()
 
-  selectInput("num_var1", "Select X Variable", c(vars), width = 200)
+  selectInput("scatterx", "Select X Variable", c(vars), width = 300)
 })
 
-renderUI({
+
+output$scattery <- renderUI({
     dataset <- importing()
     vars <- dataset %>% select_if(is.numeric) %>% names()
-  selectInput("num_var2", "Select Y Variable", c(vars), width = 200)
+  selectInput("scattery", "Select Y Variable", c(vars), width = 300)
 })
 
-renderUI({
+output$scattersize <- renderUI({
     dataset <- importing()
     vars <- dataset %>% select_if(is.numeric) %>% names()
-  selectInput("num_var3", "Select Grouping Variable", c(" ", vars), width = 200)
+  selectInput("scattersize", "Select Sizing Variable", c(" ", vars), width = 300)
 })
-```
 
-### Categorical Inputs
+output$scattergroup <- renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+  selectInput("scattergroup", "Select Grouping Variable", c(" ", vars), width = 300)
+})
 
-```{r}
-
-renderUI({
+#Barplot Inputs
+output$barx <- renderUI({
     dataset <- importing()
     va <- dataset %>% select_if(is.character) %>% names()
     rs <- dataset %>% select_if(is.factor) %>% names()
     vars <- c(va,rs)
 
-  selectInput("cross_var1", "Select X Variable", c(vars), width = 200)
+  selectInput("barx", "Select X Variable", c(vars), width = 300)
 })
 
-renderUI({
+output$bargroup <- renderUI({
     dataset <- importing()
     va <- dataset %>% select_if(is.character) %>% names()
     rs <- dataset %>% select_if(is.factor) %>% names()
     vars <- c(va,rs)
-  selectInput("cross_var2", "Select Y Variable", c(vars), width = 200)
+  selectInput("bargroup", "Select Grouping Variable", c(" ", vars), width = 300)
 })
 
-renderUI({
+output$boxx <- renderUI({
     dataset <- importing()
     va <- dataset %>% select_if(is.character) %>% names()
     rs <- dataset %>% select_if(is.factor) %>% names()
     vars <- c(va,rs)
-  selectInput("cross_var3", "Select Grouping Variable", c(" ", vars), width = 200)
+
+  selectInput("boxx", "Select X Variable", c(vars), width = 300)
+})
+
+output$boxy <- renderUI({
+    dataset <- importing()
+    vars <- dataset %>% select_if(is.numeric) %>% names()
+  selectInput("boxy", "Select Y Variable", c(vars), width = 300)
+})
+
+output$boxgroup <- renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+  selectInput("boxgroup", "Select Grouping Variable", c(" ", vars), width = 300)
+})
+
+#Cross Table
+
+output$crossx <- renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+
+  selectInput("crossx", "Select X Variable", c(vars), width = 300)
+})
+
+output$crossy <- renderUI({
+    dataset <- importing()
+    va <- dataset %>% select_if(is.character) %>% names()
+    rs <- dataset %>% select_if(is.factor) %>% names()
+    vars <- c(va,rs)
+
+  selectInput("crossy", "Select X Variable", c(vars), width = 300)
 })
 ```
 
-Row {.tabset} 
--------------------------------------
-### Summary Table
-```{r}
+```{r side Panel}
+#SideBar Panel
+sidebarPanel(
+  uiOutput("choose"),
+  conditionalPanel(condition = "input.conditionedPanels == 'scatter'",
+                   uiOutput("scatterx"),
+                   uiOutput("scattery"),
+                   uiOutput("scattersize"),
+                   uiOutput("scattergroup")),
+  conditionalPanel(condition = "input.conditionedPanels == 'bar'",
+                   uiOutput("barx"),
+                   uiOutput("bargroup")),
+  conditionalPanel(condition = "input.conditionedPanels == 'box'",
+                   uiOutput("boxx"),
+                   uiOutput("boxy"),
+                   uiOutput("boxgroup")),
+  conditionalPanel(condition = "input.conditionedPanels == 'cross'",
+                   uiOutput("crossx"),
+                   uiOutput("crossy")),
+  width = 2
+)
+```
 
-renderTable({
+```{r Main Panel}
+#Main Panel
+mainPanel(
+  tabsetPanel(
+    tabPanel("Summary",
+             value = "summary",
+             tableOutput("sumTable")),
+    tabPanel("Scatterplot",
+             value = "scatter",
+             plotlyOutput("scatterPlot")),
+    tabPanel("Barplot",
+             value = "bar",
+             plotlyOutput("barPlot")),
+    tabPanel("Boxplot",
+             value = "box",
+             plotlyOutput("boxPlot")),
+    tabPanel("Cross Table",
+             value = "cross",
+             verbatimTextOutput("crossTable")),
+    id = "conditionedPanels"
+    )
+  )
+```
+
+```{r summary & corr}
+output$sumTable <- renderTable({
   dataset <- importing()
   a <- as.vector(input$selector)
   b <- dataset[,names(dataset) %in% a]
@@ -227,44 +310,76 @@ renderTable({
   data <- psych::describe(dataset %>% select_if(is.numeric))
   data %>% mutate(vars = row.names(data))
 })
-```
 
-### Scatterplots
-
-```{r}
-renderPlotly({
+output$corr <- renderPlot({
   dataset <- importing()
   a <- as.vector(input$selector)
   b <- dataset[,names(dataset) %in% a]
   dataset <- dataset[,..b]
-  
+  data <- dataset %>% select_if(is.numeric)
+  corr <- cor(data)
+  corrplot::corrplot.mixed(corr)
+},
+width = 500,
+height = 500)
+```
+
+```{r scatter}
+output$scatterPlot <- renderPlotly({
+  dataset <- importing()
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+
 p <- ggplot(
-    data = dataset, aes_string(x = input$num_var1, y = input$num_var2)) +
+    data = dataset, aes_string(x = input$scatterx, y = input$scattery)) +
     scale_fill_simpsons() +
     scale_color_simpsons()
-  
-if(input$cross_var3 == " " & input$num_var3 == " "){
+
+if(input$scattergroup == " " & input$scattersize == " "){
   ggplotly(p + geom_point()) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
-} else if(input$cross_var3 != " " & input$num_var3 == " "){
-  ggplotly(p + geom_point(aes_string(col = input$cross_var3))) %>%
+} else if(input$scattergroup != " " & input$scattersize == " "){
+  ggplotly(p + geom_point(aes_string(col = input$scattergroup))) %>%
       layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
-} else if(input$cross_var3 == " " & input$num_var3 != " "){
-  ggplotly(p + geom_point(aes_string(size = input$num_var3))) %>%
+} else if(input$scattergroup == " " & input$scattersize != " "){
+  ggplotly(p + geom_point(aes_string(size = input$scattersize))) %>%
       layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
-} else if(input$cross_var3 != " " & input$num_var3 != " "){
-  ggplotly(p + geom_point(aes_string(col = input$cross_var3, size = input$num_var3))) %>%
+} else if(input$scattergroup != " " & input$scattersize != " "){
+  ggplotly(p + geom_point(aes_string(col = input$scattergroup, size = input$scattersize))) %>%
       layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
 }
 })
 ```
 
-
-### Barplots
-
-```{r}
-renderPlotly({
+```{r boxPlot}
+output$boxPlot <- renderPlotly({
 dataset <- importing()
-    
+
+  a <- as.vector(input$selector)
+  b <- dataset[,names(dataset) %in% a]
+  dataset <- dataset[,..b]
+
+  p <- ggplot(
+    data = dataset, aes_string(x = input$boxx, y = input$boxy)) +
+    scale_fill_simpsons() +
+    scale_color_simpsons()
+
+  if(input$boxgroup == " "){
+  ggplotly(p + geom_boxplot(col = "slateblue3")) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+  } else{
+  ggplotly(
+    p +
+    geom_boxplot( aes_string(fill = input$boxgroup))) %>%
+    layout(legend = list(orientation = "h", x = 0.4, y = -0.2)) %>%
+    layout(boxmode = "group")
+  }
+})
+```
+
+```{r Barplot}
+output$barPlot <- renderPlotly({
+dataset <- importing()
+
   a <- as.vector(input$selector)
   b <- dataset[,names(dataset) %in% a]
   dataset <- dataset[,..b]
@@ -274,78 +389,36 @@ dataset <- importing()
   b <- dataset[,names(dataset) %in% vars]
   dataset <- dataset[,..b]
   p <- ggplot(
-    data = dataset, aes_string(x = input$cross_var1)) +
-    scale_fill_simpsons() 
-  
-  if(input$cross_var3 == " "){
+    data = dataset, aes_string(x = input$barx)) +
+    scale_fill_simpsons()
+
+  if(input$bargroup == " "){
   ggplotly(p + geom_bar(fill = "slateblue3") ) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
   } else{
   ggplotly(
-    p + geom_bar(aes_string(fill = input$cross_var3)))%>%
+    p + geom_bar(aes_string(fill = input$bargroup)))%>%
       layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
   }
 })
-
-
 ```
 
-### Boxplot
-
-```{r}
-renderPlotly({
-dataset <- importing()
-    
-  a <- as.vector(input$selector)
-  b <- dataset[,names(dataset) %in% a]
-  dataset <- dataset[,..b]
-
-  p <- ggplot(
-    data = dataset, aes_string(x = input$cross_var1, y = input$num_var2)) +
-    scale_fill_simpsons() +
-    scale_color_simpsons()
-  
-  if(input$cross_var3 == " "){
-  ggplotly(p + geom_boxplot(col = "slateblue3")) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
-  } else{
-  ggplotly(
-    p + 
-    geom_boxplot(col = "black", aes_string(fill = input$cross_var3))) %>%
-    layout(legend = list(orientation = "h", x = 0.4, y = -0.2)) %>% 
-    layout(boxmode = "group")
-  }
-})
-
-
-```
-
-
-### Cross Table
-
-```{r}
-
-renderPrint({
+```{r cross table}
+output$crossTable <- renderPrint({
   dataset <- importing()
   a <- as.vector(input$selector)
   b <- dataset[,names(dataset) %in% a]
   dataset <- dataset[,..b] %>% as.data.frame()
-  CrossTable(dataset[, input$cross_var1],
-             dataset[, input$cross_var2],
+  CrossTable(dataset[, input$crossx],
+             dataset[, input$crossy],
              format="SPSS")
   # ftable(table(dataset[, input$cross_var1],
   #            dataset[, input$cross_var2]))
 })
-
-
-
-
 ```
-
-
-
-
 
 Survival Analysis
 =======================================================================
+
 
 Longitudinal Analysis
 =======================================================================
